@@ -4,8 +4,8 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "web_server_rg" {
-  name = "web_rg"
-  location = "West Europe"
+  name     = var.rg
+  location = var.location
 }
 
 
