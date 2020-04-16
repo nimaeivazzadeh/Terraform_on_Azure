@@ -16,3 +16,8 @@ variable "web_server_address_space" {
     type    = string
     default = "1.0.0.0/22"
 }
+
+variable "web_server_address_prefix" {
+    type    = string
+    default = "1.0.1.0/24"
+ }
