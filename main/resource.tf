@@ -61,9 +61,9 @@ resource "azurerm_network_security_group" "web_server_nsg" {
    }
  }
 
-#  resource "azurerm_network_interface_security_group_association" "web_server_nsg_association" {  # to link security group to the network interface. 
-#    network_interface_id          = azurerm_network_interface.web_server_nic.id
-#    network_security_group_id     = azurerm_network_security_group.web_server_nsg.id
+ resource "azurerm_network_interface_security_group_association" "web_server_nsg_association" {  # to link security group to the network interface. 
+   network_interface_id          = azurerm_network_interface.web_server_nic.id
+   network_security_group_id     = azurerm_network_security_group.web_server_nsg.id
 
-#  }
+ }
 
