@@ -28,13 +28,13 @@ resource "azurerm_network_interface" "web_server_nic" {
     name               = "${var.web_server_name}-ip"
     subnet_id          = azurerm_subnet.web_server_subnet.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.azurerm_public_ip.id   # This associates network interface with public ip address resource.
+    public_ip_address_id          = azurerm_public_ip.web_server_public_ip.id   # This associates network interface with public ip address resource.
   }
 
 }
 
 
-resource "azurerm_public_ip" "azurerm_public_ip" {
+resource "azurerm_public_ip" "web_server_public_ip" {
   name                 = "${var.resource_prefix}-public-ip"
   location             = var.web_server_location
   resource_group_name  = azurerm_resource_group.web_server_region.name
@@ -47,7 +47,7 @@ resource "azurerm_network_security_group" "web_server_nsg" {
   resource_group_name  = azurerm_resource_group.web_server_region.name
 
   security_rule {
-    name               = "Inbound"
+    name               = "RDP"
     priority           = 100
     direction          = "Inbound"
     access             = "Allow"
@@ -74,9 +74,10 @@ resource "azurerm_windows_virtual_machine" "web_server" {
   location            = var.web_server_location
   size                = "Standard_B1s"
   admin_username      = "webserver"
-  admin_password      = "P@ssw0rd123"
+  admin_password      = "P@ssw0rd1234"
+  availability_set_id = azurerm_availability_set.web_server_availability_set.id  # To link our VM to the availability set. 
   network_interface_ids = [
-    azurerm_network_interface.web_server_nic.id,
+    azurerm_network_interface.web_server_nic.id
   ]
 
   os_disk {
@@ -90,4 +91,13 @@ resource "azurerm_windows_virtual_machine" "web_server" {
     sku       = "Datacenter-Core-1709-smalldisk"
     version   = "latest"
   }
+}
+
+resource "azurerm_availability_set" "web_server_availability_set" {
+  name                        = "${var.resource_prefix}-availability_set"
+  location                    = var.web_server_location
+  resource_group_name         = azurerm_resource_group.web_server_region.name
+  managed                     = true
+  platform_fault_domain_count = 2
+  
 }
