@@ -24,10 +24,23 @@ variable "web_server_address_prefix" {
 
  variable "web_server_name" {
     type    = string
-    default = "web-01"
+    default = "web"
  }
 
  variable "environment" {
     type    = string
     default = "Production"
+ }
+
+ variable "web_server_count" {
+    type    = number
+    default = 2
+ }
+
+ variable "web_server_subnet" {
+    type    = map
+    default = {
+        web-server           = "1.0.1.0/24"
+        AzureBastationSubnet = "1.0.2.0/24"
+    }
  }
