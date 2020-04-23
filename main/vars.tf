@@ -1,10 +1,10 @@
 variable "region" {
     type    = string
-    default = "Oslo"
+    default = "Washington"
 }
 variable "web_server_location" {
     type    = string
-    default = "Norway East"
+    default = "West US 2"
 }
 
 variable "resource_prefix" {
@@ -37,7 +37,7 @@ variable "web_server_address_prefix" {
     default = 2
  }
 
- variable "web_server_subnet" {
+ variable "web_server_subnets" {
     type    = map
     default = {
         web-server           = "1.0.1.0/24"
