@@ -29,7 +29,7 @@ variable "web_server_address_prefix" {
 
  variable "environment" {
     type    = string
-    default = "Production"
+    default = "production"
  }
 
  variable "web_server_count" {
@@ -43,4 +43,14 @@ variable "web_server_address_prefix" {
         web-server           = "1.0.1.0/24"
         AzureBastationSubnet = "1.0.2.0/24"
     }
+ }
+
+ locals {
+     web_server_name   = var.environment == "production" ? "${var.web_server_name}-prod" : "${var.web_server_name}-dev"
+     build_environment = var.environment == "production" ? "production" : "development"
+ }
+
+ variable "terraform_script_version" {
+     type = string
+     default = "1.0.0"
  }
