@@ -48,12 +48,50 @@ resource "azurerm_subnet" "web_server_subnet" {
 # }
 
 
-resource "azurerm_public_ip" "web_server_public_ip" {
+resource "azurerm_public_ip" "web_server_lb_public_ip" {
   name                 = "${var.resource_prefix}-public-ip"
   location             = var.web_server_location
   resource_group_name  = azurerm_resource_group.web_server_region.name
   allocation_method    = var.environment == "Production" ? "Static" : "Dynamic"   # a conditional statement.
 }
+
+resource "azurerm_lb" "web_server_lb" {    # This resource make up a load balance resouce with associated public IP address. 
+  name                 = "${var.resource_prefix}-lb"
+  location             = var.web_server_location
+  resource_group_name  = azurerm_resource_group.web_server_region.name
+
+  frontend_ip_configuration {
+    name                 = "${var.resource_prefix}-lb-frontend_ip"
+    public_ip_address_id = azurerm_public_ip.web_server_lb_public_ip.id
+  }
+}
+
+resource "azurerm_lb_backend_address_pool" "web_server_lb_backend_pool" {
+  name                = "${var.resource_prefix}-backend_pool"
+  resource_group_name = azurerm_resource_group.web_server_region.name
+  loadbalancer_id     = azurerm_lb.web_server_lb.id
+}
+
+resource "azurerm_lb_probe" "web_server_lb_http_probe" {
+  name                = "${var.resource_prefix}-lb-http-probe"
+  resource_group_name = azurerm_resource_group.web_server_region.name
+  loadbalancer_id     = azurerm_lb.web_server_lb.id
+  protocol            = "TCP"
+  port                = "80"
+}
+
+resource "azurerm_lb_rule" "web_server_lb_http_rule" {
+  name                = "${var.resource_prefix}-lb-http-rule"
+  resource_group_name = azurerm_resource_group.web_server_region.name
+  loadbalancer_id     = azurerm_lb.web_server_lb.id
+  protocol            = "TCP"
+  frontend_port       = "80"
+  backend_port        = "80"
+  frontend_ip_configuration_name = "${var.resource_prefix}-lb-frontend_ip"
+  probe_id            = azurerm_lb_probe.web_server_lb_http_probe.id      # To link the rule resource to the probe.
+  backend_address_pool_id  = azurerm_lb_backend_address_pool.web_server_lb_backend_pool.id  # To link backend address pool id to this rule.
+}
+
 
 resource "azurerm_network_security_group" "web_server_nsg" {
   name                     = "${var.resource_prefix}-nsg"
@@ -72,15 +110,30 @@ resource "azurerm_network_security_group" "web_server_nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
-   tags ={
-     environment = "Production"
-   }
+ }
+
+ resource "azurerm_network_security_group" "web_server_nsg_http" {
+  name                     = "${var.resource_prefix}-nsg"
+  location                 = var.web_server_location
+  resource_group_name      = azurerm_resource_group.web_server_region.name
+  # count = var.environment   == "Production" ? 0 : 1   # To controll your resources.
+
+  security_rule {
+    name               = "HTTP"
+    priority           = 110
+    direction          = "Inbound"
+    access             = "Allow"
+    protocol           = "TCP"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
  }
 
  resource "azurerm_subnet_network_security_group_association" "web_server_sag" {  # to link security group to the network interface. 
    subnet_id                     = azurerm_subnet.web_server_subnet["web-server"].id
    network_security_group_id     = azurerm_network_security_group.web_server_nsg.id
-
  }
 
 resource "azurerm_virtual_machine_scale_set" "web_server" {
@@ -127,36 +180,7 @@ resource "azurerm_virtual_machine_scale_set" "web_server" {
       name                                   = local.web_server_name
       primary                                = true
       subnet_id                              = azurerm_subnet.web_server_subnet["web-server"].id
+      load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.web_server_lb_backend_pool.id]
     }
   }
-
 }
-  # size                  = "Standard_F2s_v2"
-  # admin_username        = "webserver"
-  # admin_password        = "P@ssw0rd1234"
-  # count                 =  var.web_server_count  # counts the number of VMs
-  # availability_set_id   =  azurerm_availability_set.web_server_availability_set.id  # To link our VM to the availability set. 
-  # network_interface_ids = [azurerm_network_interface.web_server_nic[count.index].id]
-
-
-  # os_disk {
-  #   caching              = "ReadWrite"
-  #   storage_account_type = "Standard_LRS"
-  # }
-
-#   source_image_reference {
-#     publisher = "MicrosoftWindowsServer"
-#     offer     = "WindowsServerSemiAnnual"
-#     sku       = "Datacenter-Core-1709-smalldisk"
-#     version   = "latest"
-#   }
-# }
-
-# resource "azurerm_availability_set" "web_server_availability_set" {
-#   name                        = "${var.resource_prefix}-availability_set"
-#   location                    = var.web_server_location
-#   resource_group_name         = azurerm_resource_group.web_server_region.name
-#   managed                     = true
-#   platform_fault_domain_count = 2
-
-# }
